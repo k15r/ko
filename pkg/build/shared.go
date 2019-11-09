@@ -67,8 +67,8 @@ func (c *Caching) Build(ctx context.Context, ip string) (v1.Image, error) {
 }
 
 // IsSupportedReference implements Interface
-func (c *Caching) IsSupportedReference(ip string, strict bool) bool {
-	return c.inner.IsSupportedReference(ip, strict)
+func (c *Caching) IsSupportedReference(ip string) bool {
+	return c.inner.IsSupportedReference(ip)
 }
 
 // Invalidate removes an import path's cached results.

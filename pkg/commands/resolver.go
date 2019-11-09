@@ -36,7 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-func gobuildOptions(bo *options.BuildOptions) ([]build.Option, error) {
+func gobuildOptions(bo *options.BuildOptions, so *options.StrictOptions) ([]build.Option, error) {
 	creationTime, err := getCreationTime()
 	if err != nil {
 		return nil, err
@@ -50,11 +50,14 @@ func gobuildOptions(bo *options.BuildOptions) ([]build.Option, error) {
 	if bo.DisableOptimizations {
 		opts = append(opts, build.WithDisabledOptimizations())
 	}
+	if so.Strict {
+		opts = append(opts, build.WithStrictMode( ))
+	}
 	return opts, nil
 }
 
-func makeBuilder(bo *options.BuildOptions) (*build.Caching, error) {
-	opt, err := gobuildOptions(bo)
+func makeBuilder(bo *options.BuildOptions, so *options.StrictOptions) (*build.Caching, error) {
+	opt, err := gobuildOptions(bo, so)
 	if err != nil {
 		log.Fatalf("error setting up builder options: %v", err)
 	}
@@ -307,7 +310,7 @@ func resolveFile(
 
 	}
 
-	if err := resolve.ImageReferences(ctx, docNodes, sto.Strict, builder, pub); err != nil {
+	if err := resolve.ImageReferences(ctx, docNodes,builder, pub); err != nil {
 		return nil, fmt.Errorf("error resolving image references: %v", err)
 	}
 

@@ -45,7 +45,7 @@ func addRun(topLevel *cobra.Command) {
   # This supports relative import paths as well.
   ko run foo --image=./cmd/baz`,
 		Run: func(cmd *cobra.Command, args []string) {
-			builder, err := makeBuilder(bo)
+			builder, err := makeBuilder(bo, &options.StrictOptions{})
 			if err != nil {
 				log.Fatalf("error creating builder: %v", err)
 			}

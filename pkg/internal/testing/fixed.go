@@ -35,7 +35,7 @@ func NewFixedBuild(entries map[string]v1.Image) build.Interface {
 }
 
 // IsSupportedReference implements build.Interface
-func (f *fixedBuild) IsSupportedReference(s string, _ bool) bool {
+func (f *fixedBuild) IsSupportedReference(s string) bool {
 	_, ok := f.entries[s]
 	return ok
 }

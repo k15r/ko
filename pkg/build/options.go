@@ -45,6 +45,14 @@ func WithDisabledOptimizations() Option {
 	}
 }
 
+// WithStrictMode is a functional option for enabling strict builds
+func WithStrictMode() Option {
+	return func(gbo *gobuildOpener) error {
+		gbo.strict = true
+		return nil
+	}
+}
+
 // withBuilder is a functional option for overriding the way go binaries
 // are built.
 func withBuilder(b builder) Option {

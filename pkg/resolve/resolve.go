@@ -27,27 +27,22 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const koPrefix = "ko://"
-
 // ImageReferences resolves supported references to images within the input yaml
 // to published image digests.
 //
 // If a reference can be built and pushed, its yaml.Node will be mutated.
-func ImageReferences(ctx context.Context, docs []*yaml.Node, strict bool, builder build.Interface, publisher publish.Interface) error {
+func ImageReferences(ctx context.Context, docs []*yaml.Node, builder build.Interface, publisher publish.Interface) error {
 	// First, walk the input objects and collect a list of supported references
 	refs := make(map[string][]*yaml.Node)
 
 	for _, doc := range docs {
-		it := refsFromDoc(doc, strict)
+		it := refsFromDoc(doc)
 
 		for node, ok := it(); ok; node, ok = it() {
 			ref := strings.TrimSpace(node.Value)
-			tref := strings.TrimPrefix(ref, koPrefix)
 
-			if builder.IsSupportedReference(tref, strings.HasPrefix(ref, koPrefix)) {
-				refs[tref] = append(refs[tref], node)
-			} else if strict {
-				return fmt.Errorf("found strict reference but %s is not a valid import path", ref)
+			if builder.IsSupportedReference(ref) {
+				refs[ref] = append(refs[ref], node)
 			}
 		}
 	}
@@ -90,14 +85,9 @@ func ImageReferences(ctx context.Context, docs []*yaml.Node, strict bool, builde
 	return nil
 }
 
-func refsFromDoc(doc *yaml.Node, strict bool) yit.Iterator {
+func refsFromDoc(doc *yaml.Node) yit.Iterator {
 	it := yit.FromNode(doc).
 		RecurseNodes().
 		Filter(yit.StringValue)
-
-	if strict {
-		return it.Filter(yit.WithPrefix(koPrefix))
-	}
-
 	return it
 }

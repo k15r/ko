@@ -38,6 +38,8 @@ import (
 const (
 	appDir             = "/ko-app"
 	defaultAppFilename = "ko-app"
+	testPrefix         = "ko-test://"
+	mainPrefix         = "ko://"
 )
 
 // GetBase takes an importpath and returns a base v1.Image.
@@ -50,6 +52,7 @@ type gobuild struct {
 	build                builder
 	disableOptimizations bool
 	mod                  *modInfo
+	strict               bool
 }
 
 // Option is a functional option for NewGo.
@@ -61,6 +64,7 @@ type gobuildOpener struct {
 	build                builder
 	disableOptimizations bool
 	mod                  *modInfo
+	strict               bool
 }
 
 func (gbo *gobuildOpener) Open() (Interface, error) {
@@ -73,6 +77,7 @@ func (gbo *gobuildOpener) Open() (Interface, error) {
 		build:                gbo.build,
 		disableOptimizations: gbo.disableOptimizations,
 		mod:                  gbo.mod,
+		strict:               gbo.strict,
 	}, nil
 }
 
@@ -120,19 +125,33 @@ func NewGo(options ...Option) (Interface, error) {
 // Valid importpaths that provide commands (i.e., are "package main") are
 // supported.
 // strict == true: import path was referenced as a "strict" reference. Here we use this to also allow test builds
-func (g *gobuild) IsSupportedReference(s string, strict bool) bool {
-	return g.isMain(s) || (strict && g.isTest(s))
+func (g *gobuild) IsSupportedReference(s string) bool {
+	return g.isMain(s) || g.isTest(s)
 }
 
 func (g *gobuild) isMain(s string) bool {
+	var isStrict bool
+	if strings.HasPrefix(s, mainPrefix) {
+		isStrict = true
+		s = strings.TrimPrefix(s, mainPrefix)
+	}
 	p, err := g.importPackage(s)
 	if err != nil {
 		return false
 	}
-	return p.IsCommand()
+	isMain := p.IsCommand()
+	if g.strict {
+		return isStrict && isMain
+	}
+	return isMain
 }
 
 func (g *gobuild) isTest(s string) bool {
+	// tests must always be strict!
+	if ! strings.HasPrefix(s, testPrefix) {
+		return false
+	}
+	s = strings.TrimPrefix(s, testPrefix)
 	p, err := g.importPackage(s)
 	if err != nil {
 		return false
@@ -171,9 +190,11 @@ func build(ctx context.Context, ip string, platform v1.Platform, disableOptimiza
 	args := make([]string, 0, 8)
 	// We want to build a test binary
 	if test {
+		ip = strings.TrimPrefix(ip, testPrefix)
 		args = append(args, "test")
 		args = append(args, "-c")
 	} else {
+		ip = strings.TrimPrefix(ip, mainPrefix)
 		args = append(args, "build")
 	}
 	if disableOptimizations {
